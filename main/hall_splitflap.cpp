@@ -20,10 +20,6 @@ HallSplitflap::HallSplitflap (
 	status_bits = xEventGroupCreate();
 	mutex = xSemaphoreCreateBinary();
 
-    #if OPTION_DEBUG_MESSAGES
-	output_queue = xQueueCreate(10, sizeof(Message));
-    #endif
-
 	// Now it gets hot
 	setup_gpio();
 	setup_timer();
@@ -36,7 +32,51 @@ HallSplitflap::~HallSplitflap() {
 
 // called from splitflap task
 void HallSplitflap::loop() {
+    if (flap_pending) {
+        flap_pending = false;
+    } else {
+        return;
+    }
 
+    if (ignore_delay > 0 && (xEventGroupGetBits(status_bits) & SBIT_IGNORE) != 0) {
+        #if OPTION_DEBUG_MESSAGES
+        ESP_LOGI(TAG_FLAP, "ignoring, cur %d, cmd %d", flap, flap_cmd);
+        #endif
+        return;
+    }
+
+    xSemaphoreTake(mutex, 0);
+    {
+        if (home_pending) {
+            flap = zero_offset;
+            flap_known = true;
+            home_pending = false;
+
+            #if OPTION_DEBUG_MESSAGES
+            ESP_LOGI(TAG_FLAP, "zeroing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+            #endif
+
+        } else {
+            if (cycling) {
+                flap = (flap + 1) % flap_count;
+
+                #if OPTION_DEBUG_MESSAGES
+                ESP_LOGI(TAG_FLAP, "incrementing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+                #endif
+            }
+        }
+
+        if (flap_known && flap == flap_cmd) {
+            // Keep cycling for 'overshoot_delay' us
+            if (overshoot_delay > 0) {
+                esp_timer_start_once(overshoot_timer, overshoot_delay);
+            } else {
+                gpio_set_level(motorPin, 0);
+                cycling = false;
+            }
+        }
+    }
+    xSemaphoreGive(mutex);
 }
 
 // called from splitflap task
@@ -101,95 +141,29 @@ uint8_t HallSplitflap::get_commanded_position() {
     return result;
 }
 
-// caution isr!
-void HallSplitflap::isr_home() {
-
-	home_pending = true;
-
-#if OPTION_DEBUG_MESSAGES
-    BaseType_t hptw = pdFALSE;
-    Message msg;
-	sprintf(msg.content, "home pending, cur %d, cmd %d, tix %lld, sbit %d", flap, flap_cmd, esp_timer_get_time(), home_pending);
-	xQueueSendFromISR(output_queue, &msg, &hptw);
-    context_switch(hptw);
-#endif
-
-}
-
-// caution isr!
-void HallSplitflap::isr_flap() {
-    BaseType_t hptw = pdFALSE;
-
-    #if OPTION_DEBUG_MESSAGES
-        Message msg;
-        sprintf(msg.content, "flap fallen, new %d, cmd %d, tix %lld, sbit %d", flap, flap_cmd, esp_timer_get_time(), home_pending);
-        xQueueSendFromISR(output_queue, &msg, &hptw);
-    #endif
-
-	if (ignore_delay > 0 && (xEventGroupGetBitsFromISR(status_bits) & SBIT_IGNORE) != 0) {
-
-        #if OPTION_DEBUG_MESSAGES
-            Message msg;
-            sprintf(msg.content, "ignoring, cur %d, cmd %d", flap, flap_cmd);
-            xQueueSendFromISR(output_queue, &msg, &hptw);
-            context_switch(hptw);
-        #endif
-
-        return;
-	}
-
-	xSemaphoreTakeFromISR(mutex, &hptw);
-	{
-		if (home_pending) {
-			flap = zero_offset;
-			flap_known = true;
-			home_pending = false;
-
-#if OPTION_DEBUG_MESSAGES
-            Message msg;
-            sprintf(msg.content, "zeroing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
-            xQueueSendFromISR(output_queue, &msg, &hptw);
-#endif
-		} else {
-			if (cycling) {
-				flap = (flap + 1) % flap_count;
-
-#if OPTION_DEBUG_MESSAGES
-                Message msg;
-                sprintf(msg.content, "incrementing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
-                xQueueSendFromISR(output_queue, &msg, &hptw);
-#endif
-			}
-		}
-
-		if (flap_known && flap == flap_cmd) {
-			// Keep cycling for 'overshoot_delay' us
-			if (overshoot_delay > 0) {
-				esp_timer_start_once(overshoot_timer, overshoot_delay);
-			} else {
-				gpio_set_level(motorPin, 0);
-				cycling = false;	
-			}
-		}
-	}
-	xSemaphoreGiveFromISR(mutex, &hptw);
-
-	context_switch(hptw);
-}
-
 // called from timer task
 void HallSplitflap::ignore_timer_timeout() {
-	xEventGroupClearBits(status_bits, SBIT_IGNORE);
+    xEventGroupClearBits(status_bits, SBIT_IGNORE);
 }
 
 // called from timer task
 void HallSplitflap::overshoot_timer_timeout() {
-	xSemaphoreTake(mutex, 0);
-	{
-		gpio_set_level(motorPin, 0);
-		cycling = false;
-	}
-	xSemaphoreGive(mutex);
+    xSemaphoreTake(mutex, 0);
+    {
+        gpio_set_level(motorPin, 0);
+        cycling = false;
+    }
+    xSemaphoreGive(mutex);
+}
+
+// caution isr!
+void HallSplitflap::isr_home() {
+	home_pending = true;
+}
+
+// caution isr!
+void HallSplitflap::isr_flap() {
+    flap_pending = true;
 }
 
 //

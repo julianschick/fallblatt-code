@@ -19,7 +19,7 @@ void SplitflapTask::worker(void* arg) {
 	    new PollingSplitflap(40, 0, GPIO_NUM_23, GPIO_NUM_19, GPIO_NUM_21, ADC1_CHANNEL_0, 500, 1500);
     #elif DEPLOYMENT_TARGET == TARGET_SBAHN
         //Linie
-        new HallSplitflap(64, 62, PORT3, 35000, 5000);
+        new HallSplitflap(64, 62, PORT3, 38000, 5000);
         //Endbahnhof
         new HallSplitflap(80, 70, PORT4, 30000, 15000);
         //Zuglauf
@@ -43,18 +43,6 @@ void SplitflapTask::worker(void* arg) {
 			}
 			
 		}
-
-        #if OPTION_DEBUG_MESSAGES && DEPLOYMENT_TARGET == TARGET_SBAHN
-            for (int i = 0; i < Splitflap::number_of_modules(); i++) {
-
-		        HallSplitflap* module = (HallSplitflap*) Splitflap::module(i);
-
-		        Message msg;
-		        if (xQueueReceive(module->getOutputQueue(), &msg, 0)) {
-		            printf("module %d: %s\n", i, msg.content);
-		        }
-            }
-        #endif
 
 		vTaskDelay(1); 
 	}

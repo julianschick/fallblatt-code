@@ -3,12 +3,6 @@
 
 #include "splitflap.h"
 
-#if OPTION_DEBUG_MESSAGES
-struct Message {
-    char content[64];
-};
-#endif
-
 class HallSplitflap : public Splitflap {
 
 public:
@@ -30,9 +24,6 @@ public:
     uint8_t get_commanded_position();
 	
 	EventGroupHandle_t getStatusBits() { return status_bits; };
-#if OPTION_DEBUG_MESSAGES
-	QueueHandle_t getOutputQueue() { return output_queue; };
-#endif
 
 private:
 	// gpio pins
@@ -51,6 +42,7 @@ private:
     bool cmd_void = true;
     bool cycling = false;
     bool home_pending = false;
+    bool flap_pending = false;
 
 	// timers
 	esp_timer_handle_t ignore_timer;
