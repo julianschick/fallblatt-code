@@ -29,15 +29,21 @@ private:
 	int falling_threshold;
 	int rising_threshold;
 
-	int current_flap = 0;
-    bool flap_ch_flag = false;
-    bool current_flap_inaccurate = true;
-    int flap_cmd = 0;
+    /*uint8_t flap = 0;
+    uint8_t flap_cmd = 0;
+    bool flap_known = false;
     bool cmd_void = true;
-    bool motor_running = false;
-    bool next_flap_is_home = false;
-    uint32_t notificationValue;
+    bool cycling = false;
+    bool home_pending = false;*/
 
+	uint8_t flap = 0;
+    uint8_t flap_cmd = 0;
+    bool flap_known = false;
+    bool cmd_void = true;
+    bool cycling = false;
+    bool home_pending = false;
+
+    // sensor input
 	int fsensor_state;
 	int fsensor_value;
 	Flank fsensor_ch_flag;

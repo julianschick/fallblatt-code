@@ -16,81 +16,68 @@ PollingSplitflap::PollingSplitflap(uint8_t flap_count_, uint8_t zero_offset_, gp
 }
 
 void PollingSplitflap::loop() {
-    internal_loop(false, 0);
-}
-
-void PollingSplitflap::set_position(uint8_t pos) {
-    internal_loop(true, pos);
-}
-
-void PollingSplitflap::internal_loop(bool command_valid, uint8_t pos) {
-
-    if (command_valid) {
-        flap_cmd = pos;
-        cmd_void = false;
-    }
-
     read_sensors();
 
-    if (hsensor_ch_flag == RISING) {
-        //ESP_LOGI(TAG_FLAP, "Home sensor level RISING");
+    /*if (hsensor_ch_flag == RISING) {
+        ESP_LOGI(TAG_FLAP, "Home sensor level RISING");
     } else if (hsensor_ch_flag == FALLING) {
-        //ESP_LOGI(TAG_FLAP, "Home sensor level FALLING");
+        ESP_LOGI(TAG_FLAP, "Home sensor level FALLING");
     }
 
     if (fsensor_ch_flag == RISING) {
-        //ESP_LOGI(TAG_FLAP, "Flap sensor level RISING");
+        ESP_LOGI(TAG_FLAP, "Flap sensor level RISING");
     } else if (fsensor_ch_flag == FALLING) {
-        //ESP_LOGI(TAG_FLAP, "Flap sensor level FALLING");
-    }
+        ESP_LOGI(TAG_FLAP, "Flap sensor level FALLING");
+    }*/
 
     if (fsensor_ch_flag == RISING) {
-        current_flap = (current_flap + 1) % flap_count;
-        flap_ch_flag = true;
+        flap = (flap + 1) % flap_count;
         //ESP_LOGI(TAG_FLAP, "current_flap = %d", current_flap);
 
-        if (next_flap_is_home) {
-            if (current_flap != 0) {
+        if (home_pending) {
+            /*if (current_flap != 0) {
                 ESP_LOGI(TAG_FLAP, "Home disagree (should be 0 but is %d)", current_flap);
             } else {
                 ESP_LOGI(TAG_FLAP, "Home OK");
-            }
-            current_flap = 0;
-            current_flap_inaccurate = false;
-            next_flap_is_home = false;
+            }*/
+            flap = zero_offset;
+            flap_known = true;
+            home_pending = false;
+        }
+
+        if (flap == flap_cmd && flap_known) {
+            gpio_set_level(motorPin, 1);
+            cycling = false;
+            //ESP_LOGI(TAG_FLAP, "Motor OFF");
         }
     }
 
     if (hsensor_ch_flag == RISING) {
-        next_flap_is_home = true;
+        home_pending = true;
     }
 
     hsensor_ch_flag = NOCHANGE;
     fsensor_ch_flag = NOCHANGE;
 
-    if (flap_ch_flag) {
-        if (current_flap == flap_cmd && !current_flap_inaccurate) {
-            gpio_set_level(motorPin, 1);
-            motor_running = false;
-            ESP_LOGI(TAG_FLAP, "Motor OFF");
-        }
-    }
-
-    flap_ch_flag = false;
-
-    if (current_flap != flap_cmd && !motor_running) {
+    if (flap != flap_cmd && !cycling) {
         gpio_set_level(motorPin, 0);
-        motor_running = true;
-        ESP_LOGI(TAG_FLAP, "Motor ON");
+        cycling = true;
+        //ESP_LOGI(TAG_FLAP, "Motor ON");
     }
-    
+}
+
+void PollingSplitflap::set_position(uint8_t pos) {
+    flap_cmd = pos;
+    cmd_void = false;
+
+    loop();
 }
 
 uint8_t PollingSplitflap::get_position() {
-    if (current_flap_inaccurate) {
+    if (!flap_known) {
         return 0xFF;
     } else {
-        return current_flap;
+        return flap;
     }
 }
 

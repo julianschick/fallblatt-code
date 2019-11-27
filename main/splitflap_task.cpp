@@ -6,10 +6,6 @@
     #include "hall_splitflap.h"
 #endif
 
-#ifdef TARGET_DB
-
-#endif
-
 TaskHandle_t SplitflapTask::handle;
 
 #define PORT3 GPIO_NUM_25, GPIO_NUM_26, GPIO_NUM_27
@@ -27,14 +23,14 @@ void SplitflapTask::worker(void* arg) {
         //Endbahnhof
         new HallSplitflap(80, 70, PORT4, 30000, 15000);
         //Zuglauf
-        new HallSplitflap(80, 11, PORT2, 45000, 0000);
+        new HallSplitflap(80, 11, PORT2, 45000, 0);
     #endif
 	
 		
 	while(true) {
 
 		uint32_t cmd_value;
-		if (xTaskNotifyWait(0, 0, &cmd_value, /*portMAX_DELAY*/ 0) == pdTRUE) {
+		if (xTaskNotifyWait(0, 0, &cmd_value, 0) == pdTRUE) {
 			uint8_t module = 	(cmd_value >> 8) & 0x000000FF;
 			uint8_t pos = 		(cmd_value >> 0) & 0x000000FF;
 
@@ -48,20 +44,15 @@ void SplitflapTask::worker(void* arg) {
 			
 		}
 
-        #if OPTION_EVENT_BITS_DEBUG
-            EventBits_t status_bits = xEventGroupGetBits(spf->getStatusBits());
-            xEventGroupClearBits(spf->getStatusBits(), 0xFF);
+        #if OPTION_DEBUG_MESSAGES && DEPLOYMENT_TARGET == TARGET_SBAHN
+            for (int i = 0; i < Splitflap::number_of_modules(); i++) {
 
-            if ((status_bits & 0x01) != 0) {
-                printf("home\n");
-            }
+		        HallSplitflap* module = (HallSplitflap*) Splitflap::module(i);
 
-            if ((status_bits & 0x02) != 0) {
-                printf("flap\n");
-            }
-
-            if ((status_bits & 0x000100) != 0) {
-                printf("ignoring\n");
+		        Message msg;
+		        if (xQueueReceive(module->getOutputQueue(), &msg, 0)) {
+		            printf("module %d: %s\n", i, msg.content);
+		        }
             }
         #endif
 

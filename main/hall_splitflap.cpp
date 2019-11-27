@@ -20,6 +20,10 @@ HallSplitflap::HallSplitflap (
 	status_bits = xEventGroupCreate();
 	mutex = xSemaphoreCreateBinary();
 
+    #if OPTION_DEBUG_MESSAGES
+	output_queue = xQueueCreate(10, sizeof(Message));
+    #endif
+
 	// Now it gets hot
 	setup_gpio();
 	setup_timer();
@@ -31,8 +35,13 @@ HallSplitflap::~HallSplitflap() {
 }
 
 // called from splitflap task
-void HallSplitflap::set_position(uint8_t flap_cmd_) {
-	if (flap_cmd_ >= flap_count) {
+void HallSplitflap::loop() {
+
+}
+
+// called from splitflap task
+void HallSplitflap::set_position(uint8_t pos) {
+	if (pos >= flap_count) {
 		return;
 	}
 
@@ -42,7 +51,7 @@ void HallSplitflap::set_position(uint8_t flap_cmd_) {
 
 	xSemaphoreTake(mutex, 0);
 	{
-		flap_cmd = flap_cmd_;
+		flap_cmd = pos;
         cmd_void = false;
 
 		if ((!flap_known || flap != flap_cmd) && !cycling) {
@@ -64,62 +73,92 @@ void HallSplitflap::set_position(uint8_t flap_cmd_) {
 
 // called from any task
 uint8_t HallSplitflap::get_position() {
+    uint8_t result;
 	xSemaphoreTake(mutex, 0);
 	{
 		if (!flap_known) {
-			return 0xFF;
+			result = 0xFF;
 		} else {
-			return flap;
+			result = flap;
 		}
 	}
-	xSemaphoreGive(mutex);
+    xSemaphoreGive(mutex);
+	return result;
 }
 
 // called from any task
 uint8_t HallSplitflap::get_commanded_position() {
+    uint8_t result;
     xSemaphoreTake(mutex, 0);
     {
         if (cmd_void) {
-            return 0xFF;
+            result = 0xFF;
         } else {
-            return flap_cmd;
+            result = flap_cmd;
         }
     }
     xSemaphoreGive(mutex);
+    return result;
 }
 
 // caution isr!
 void HallSplitflap::isr_home() {
-	BaseType_t hptw1 = pdFALSE;
-	BaseType_t hptw2 = pdFALSE;
-	
-	xEventGroupSetBitsFromISR(status_bits, 0x01, &hptw1);
-	xEventGroupSetBitsFromISR(status_bits, SBIT_HOME_PENDING, &hptw2);
 
-	context_switch(hptw1 || hptw2);
+	home_pending = true;
+
+#if OPTION_DEBUG_MESSAGES
+    BaseType_t hptw = pdFALSE;
+    Message msg;
+	sprintf(msg.content, "home pending, cur %d, cmd %d, tix %lld, sbit %d", flap, flap_cmd, esp_timer_get_time(), home_pending);
+	xQueueSendFromISR(output_queue, &msg, &hptw);
+    context_switch(hptw);
+#endif
+
 }
 
 // caution isr!
 void HallSplitflap::isr_flap() {
+    BaseType_t hptw = pdFALSE;
+
+    #if OPTION_DEBUG_MESSAGES
+        Message msg;
+        sprintf(msg.content, "flap fallen, new %d, cmd %d, tix %lld, sbit %d", flap, flap_cmd, esp_timer_get_time(), home_pending);
+        xQueueSendFromISR(output_queue, &msg, &hptw);
+    #endif
+
 	if (ignore_delay > 0 && (xEventGroupGetBitsFromISR(status_bits) & SBIT_IGNORE) != 0) {
-		return;
+
+        #if OPTION_DEBUG_MESSAGES
+            Message msg;
+            sprintf(msg.content, "ignoring, cur %d, cmd %d", flap, flap_cmd);
+            xQueueSendFromISR(output_queue, &msg, &hptw);
+            context_switch(hptw);
+        #endif
+
+        return;
 	}
 
-	BaseType_t hptw1 = pdFALSE;
-	BaseType_t hptw2 = pdFALSE;
-	BaseType_t hptw3 = pdFALSE;
-
-	xEventGroupSetBitsFromISR(status_bits, 0x02, &hptw1);
-
-	xSemaphoreTakeFromISR(mutex, &hptw2);
+	xSemaphoreTakeFromISR(mutex, &hptw);
 	{
-		if ((xEventGroupGetBitsFromISR(status_bits) & SBIT_HOME_PENDING) != 0) {
+		if (home_pending) {
 			flap = zero_offset;
 			flap_known = true;
-			xEventGroupClearBitsFromISR(status_bits, SBIT_HOME_PENDING);
+			home_pending = false;
+
+#if OPTION_DEBUG_MESSAGES
+            Message msg;
+            sprintf(msg.content, "zeroing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+            xQueueSendFromISR(output_queue, &msg, &hptw);
+#endif
 		} else {
 			if (cycling) {
-				flap = (flap + 1) % flap_count;    
+				flap = (flap + 1) % flap_count;
+
+#if OPTION_DEBUG_MESSAGES
+                Message msg;
+                sprintf(msg.content, "incrementing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+                xQueueSendFromISR(output_queue, &msg, &hptw);
+#endif
 			}
 		}
 
@@ -133,9 +172,9 @@ void HallSplitflap::isr_flap() {
 			}
 		}
 	}
-	xSemaphoreGiveFromISR(mutex, &hptw3);
+	xSemaphoreGiveFromISR(mutex, &hptw);
 
-	context_switch(hptw1 || hptw2 || hptw3);
+	context_switch(hptw);
 }
 
 // called from timer task

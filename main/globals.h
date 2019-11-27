@@ -18,11 +18,11 @@
 // Target Device
 #define TARGET_DB 0
 #define TARGET_SBAHN 1
-#define DEPLOYMENT_TARGET TARGET_DB
+#define DEPLOYMENT_TARGET TARGET_SBAHN
 
 // Options
 #define OPTION_UART_INPUT 0
-#define OPTION_EVENT_BITS_DEBUG 0
+#define OPTION_DEBUG_MESSAGES 0
 
 // Log Tags
 #define TAG_FLAP "flap"
@@ -44,7 +44,7 @@
 #if DEPLOYMENT_TARGET == TARGET_DB
     #define SPP_SERVER_NAME "Delay-DB/Serial"
     #define BT_DEVICE_NAME "Delay-DB"
-#elif
+#elif DEPLOYMENT_TARGET == TARGET_SBAHN
     #define SPP_SERVER_NAME "Splitflap-Berlin/Serial"
     #define BT_DEVICE_NAME "Splitflap-Berlin"
 #endif

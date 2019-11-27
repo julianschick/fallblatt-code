@@ -3,6 +3,12 @@
 
 #include "splitflap.h"
 
+#if OPTION_DEBUG_MESSAGES
+struct Message {
+    char content[64];
+};
+#endif
+
 class HallSplitflap : public Splitflap {
 
 public:
@@ -18,11 +24,15 @@ public:
 
 	~HallSplitflap();
 
-	void set_position(uint8_t);
+	void loop();
+	void set_position(uint8_t pos);
 	uint8_t get_position();
     uint8_t get_commanded_position();
 	
 	EventGroupHandle_t getStatusBits() { return status_bits; };
+#if OPTION_DEBUG_MESSAGES
+	QueueHandle_t getOutputQueue() { return output_queue; };
+#endif
 
 private:
 	// gpio pins
@@ -34,12 +44,13 @@ private:
 	int64_t ignore_delay;
 	int64_t overshoot_delay;
 
-	// status variables
-	uint8_t flap = 0;
-	uint8_t flap_cmd = 0;
-	bool flap_known = false;
-	bool cmd_void = true;
-	bool cycling = false;
+    // status variables
+    uint8_t flap = 0;
+    uint8_t flap_cmd = 0;
+    bool flap_known = false;
+    bool cmd_void = true;
+    bool cycling = false;
+    bool home_pending = false;
 
 	// timers
 	esp_timer_handle_t ignore_timer;
@@ -48,8 +59,11 @@ private:
 	// concurrency management
 	EventGroupHandle_t status_bits;
 	uint32_t SBIT_IGNORE = 			0x000100;
-	uint32_t SBIT_HOME_PENDING = 	0x000200;
 	SemaphoreHandle_t mutex;
+
+    #if OPTION_DEBUG_MESSAGES
+	QueueHandle_t output_queue;
+    #endif
 
 	void setup_gpio();
 	void setup_timer();
@@ -64,6 +78,7 @@ private:
 	void isr_flap();
 	void ignore_timer_timeout();
 	void overshoot_timer_timeout();
+
 };
 
 #endif //HALL_SPLITFLAP_H_
