@@ -23,10 +23,9 @@ void SplitflapTask::worker(void* arg) {
         //Endbahnhof
         new HallSplitflap(80, 70, PORT4, 30000, 15000);
         //Zuglauf
-        new HallSplitflap(80, 11, PORT2, 45000, 0);
+        new HallSplitflap(80, 11, PORT2, 40000, 5000);
     #endif
-	
-		
+
 	while(true) {
 
 		uint32_t cmd_value;
@@ -34,8 +33,11 @@ void SplitflapTask::worker(void* arg) {
 			uint8_t module = 	(cmd_value >> 8) & 0x000000FF;
 			uint8_t pos = 		(cmd_value >> 0) & 0x000000FF;
 
-			ESP_LOGI(TAG_FLAP, "Command: module %d, position %d", module, pos);
-			Splitflap::module(module)->set_position(pos);
+            #if OPTION_DEBUG_MESSAGES
+			    ESP_LOGI(TAG_FLAP, "Command: module %d, position %d", module, pos);
+            #endif
+
+            Splitflap::module(module)->set_position(pos);
 		} else {
 
 			for (int i = 0; i < Splitflap::number_of_modules(); i++) {

@@ -44,18 +44,16 @@ private:
     bool home_pending = false;
     bool flap_pending = false;
 
+    int64_t last_tick;
+
 	// timers
 	esp_timer_handle_t ignore_timer;
 	esp_timer_handle_t overshoot_timer;
 
 	// concurrency management
 	EventGroupHandle_t status_bits;
-	uint32_t SBIT_IGNORE = 			0x000100;
+    uint32_t SBIT_IGNORE = 			0x00000004;
 	SemaphoreHandle_t mutex;
-
-    #if OPTION_DEBUG_MESSAGES
-	QueueHandle_t output_queue;
-    #endif
 
 	void setup_gpio();
 	void setup_timer();

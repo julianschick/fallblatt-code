@@ -32,18 +32,18 @@ HallSplitflap::~HallSplitflap() {
 
 // called from splitflap task
 void HallSplitflap::loop() {
-    if (flap_pending) {
-        flap_pending = false;
-    } else {
-        return;
-    }
+    /*EventBits_t bits = xEventGroupGetBits(status_bits);
+    bool ignore = bits & SBIT_IGNORE;*/
 
-    if (ignore_delay > 0 && (xEventGroupGetBits(status_bits) & SBIT_IGNORE) != 0) {
-        #if OPTION_DEBUG_MESSAGES
-        ESP_LOGI(TAG_FLAP, "ignoring, cur %d, cmd %d", flap, flap_cmd);
-        #endif
+    if (!flap_pending) {
         return;
     }
+    flap_pending = false;
+
+    /*if (ignore_delay > 0 && ignore) {
+        ESP_LOGI(TAG_FLAP, "m %d, ignoring, cur %d, cmd %d", id, flap, flap_cmd);
+        return;
+    }*/
 
     xSemaphoreTake(mutex, 0);
     {
@@ -53,7 +53,7 @@ void HallSplitflap::loop() {
             home_pending = false;
 
             #if OPTION_DEBUG_MESSAGES
-            ESP_LOGI(TAG_FLAP, "zeroing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+                ESP_LOGI(TAG_FLAP, "module %d, zeroing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
             #endif
 
         } else {
@@ -61,7 +61,7 @@ void HallSplitflap::loop() {
                 flap = (flap + 1) % flap_count;
 
                 #if OPTION_DEBUG_MESSAGES
-                ESP_LOGI(TAG_FLAP, "incrementing, new %d, cmd %d, tix %lld", flap, flap_cmd, esp_timer_get_time());
+                    ESP_LOGI(TAG_FLAP, "module %d, incrementing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
                 #endif
             }
         }
@@ -73,6 +73,10 @@ void HallSplitflap::loop() {
             } else {
                 gpio_set_level(motorPin, 0);
                 cycling = false;
+
+                #if OPTION_DEBUG_MESSAGES
+                    ESP_LOGI(TAG_FLAP, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+                #endif
             }
         }
     }
@@ -96,16 +100,21 @@ void HallSplitflap::set_position(uint8_t pos) {
 
 		if ((!flap_known || flap != flap_cmd) && !cycling) {
 			
-			if (ignore_delay > 0) {
+			/*if (ignore_delay > 0) {
 				xEventGroupSetBits(status_bits, SBIT_IGNORE);
-			}
+			}*/
 			
 			gpio_set_level(motorPin, 1);
 			cycling = true;
+			last_tick = esp_timer_get_time();
 
-			if (ignore_delay > 0) {
+            #if OPTION_DEBUG_MESSAGES
+                ESP_LOGI(TAG_FLAP, "module %d, start cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+            #endif
+
+			/*if (ignore_delay > 0) {
 				esp_timer_start_once(ignore_timer, ignore_delay);
-			}
+			}*/
 		}
 	}
 	xSemaphoreGive(mutex);
@@ -152,17 +161,27 @@ void HallSplitflap::overshoot_timer_timeout() {
     {
         gpio_set_level(motorPin, 0);
         cycling = false;
+
+        #if OPTION_DEBUG_MESSAGES
+            ESP_LOGI(TAG_FLAP, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+        #endif
     }
     xSemaphoreGive(mutex);
 }
 
 // caution isr!
 void HallSplitflap::isr_home() {
-	home_pending = true;
+    /*BaseType_t hptw = pdFALSE;
+	xEventGroupSetBitsFromISR(status_bits, SBIT_HOME_PENDING, &hptw);
+	context_switch(hptw);*/
+    home_pending = true;
 }
 
 // caution isr!
 void HallSplitflap::isr_flap() {
+    /*BaseType_t hptw = pdFALSE;
+    xEventGroupSetBitsFromISR(status_bits, SBIT_FLAP_FALLEN, &hptw);
+    context_switch(hptw);*/
     flap_pending = true;
 }
 
@@ -190,11 +209,11 @@ void HallSplitflap::setup_gpio() {
 
 void HallSplitflap::setup_timer() {
 	esp_timer_create_args_t timer_conf;
-	timer_conf.callback = ignore_timer_callback;
+	/*timer_conf.callback = ignore_timer_callback;
 	timer_conf.dispatch_method = ESP_TIMER_TASK;
 	timer_conf.name = "ignore_timer";
 	timer_conf.arg = &id;
-	esp_timer_create(&timer_conf, &ignore_timer);
+	esp_timer_create(&timer_conf, &ignore_timer);*/
 
 	timer_conf.callback = overshoot_timer_callback;
 	timer_conf.dispatch_method = ESP_TIMER_TASK;
