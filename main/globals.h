@@ -18,7 +18,8 @@
 // Target Device
 #define TARGET_DB 0
 #define TARGET_SBAHN 1
-#define DEPLOYMENT_TARGET TARGET_SBAHN
+#define TARGET_UHR 2
+#define DEPLOYMENT_TARGET TARGET_UHR
 
 // Options
 #define OPTION_UART_INPUT 0
@@ -38,6 +39,9 @@
 #elif DEPLOYMENT_TARGET == TARGET_SBAHN
     #define MDNS_HOSTNAME "splitflap-berlin"
     #define MDNS_SERVICE_NAME "Splitflap-Berlin/REST"
+#elif DEPLOYMENT_TARGET == TARGET_UHR
+    #define MDNS_HOSTNAME "fallblattuhr"
+    #define MDNS_SERVICE_NAME "fallblattuhr/REST"
 #endif
 
 // Bluetooth Com Properties
@@ -47,6 +51,9 @@
 #elif DEPLOYMENT_TARGET == TARGET_SBAHN
     #define SPP_SERVER_NAME "Splitflap-Berlin/Serial"
     #define BT_DEVICE_NAME "Splitflap-Berlin"
+#elif DEPLOYMENT_TARGET == TARGET_UHR
+    #define SPP_SERVER_NAME "Fallblattuhr/Serial"
+    #define BT_DEVICE_NAME "Fallblattuhr"
 #endif
 
 // Syntactic Sugar

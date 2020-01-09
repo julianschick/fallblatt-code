@@ -18,7 +18,7 @@ PollingSplitflap::PollingSplitflap(uint8_t flap_count_, uint8_t zero_offset_, gp
 void PollingSplitflap::loop() {
     read_sensors();
 
-    /*if (hsensor_ch_flag == RISING) {
+    if (hsensor_ch_flag == RISING) {
         ESP_LOGI(TAG_FLAP, "Home sensor level RISING");
     } else if (hsensor_ch_flag == FALLING) {
         ESP_LOGI(TAG_FLAP, "Home sensor level FALLING");
@@ -28,18 +28,18 @@ void PollingSplitflap::loop() {
         ESP_LOGI(TAG_FLAP, "Flap sensor level RISING");
     } else if (fsensor_ch_flag == FALLING) {
         ESP_LOGI(TAG_FLAP, "Flap sensor level FALLING");
-    }*/
+    }
 
     if (fsensor_ch_flag == RISING) {
         flap = (flap + 1) % flap_count;
         //ESP_LOGI(TAG_FLAP, "current_flap = %d", current_flap);
 
         if (home_pending) {
-            /*if (current_flap != 0) {
-                ESP_LOGI(TAG_FLAP, "Home disagree (should be 0 but is %d)", current_flap);
+            if (flap != 0) {
+                ESP_LOGI(TAG_FLAP, "Home disagree (should be 0 but is %d)", flap);
             } else {
                 ESP_LOGI(TAG_FLAP, "Home OK");
-            }*/
+            }
             flap = zero_offset;
             flap_known = true;
             home_pending = false;
@@ -48,7 +48,7 @@ void PollingSplitflap::loop() {
         if (flap == flap_cmd && flap_known) {
             gpio_set_level(motorPin, 1);
             cycling = false;
-            //ESP_LOGI(TAG_FLAP, "Motor OFF");
+            ESP_LOGI(TAG_FLAP, "Motor OFF");
         }
     }
 
@@ -62,7 +62,7 @@ void PollingSplitflap::loop() {
     if (flap != flap_cmd && !cycling) {
         gpio_set_level(motorPin, 0);
         cycling = true;
-        //ESP_LOGI(TAG_FLAP, "Motor ON");
+        ESP_LOGI(TAG_FLAP, "Motor ON");
     }
 }
 
@@ -116,6 +116,9 @@ void PollingSplitflap::read_sensors_raw_values() {
     vTaskDelay(1);
     hsensor_value = adc1_get_raw(sensorInputChannel);
     gpio_set_level(homePin, 0);
+
+    //ESP_LOGI("SENSOR", "HSensor %d", hsensor_value);
+    //ESP_LOGI("SENSOR", "FSensor %d", fsensor_value);
 }
 
 void PollingSplitflap::init_sensors() {
