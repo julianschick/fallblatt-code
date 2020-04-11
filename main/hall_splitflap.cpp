@@ -1,5 +1,9 @@
 #include "hall_splitflap.h"
 
+#define TAG "flap"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#include <esp_log.h>
+
 #define context_switch(a) if((a) != pdFALSE ) { portYIELD_FROM_ISR() }
 
 HallSplitflap::HallSplitflap (
@@ -41,7 +45,7 @@ void HallSplitflap::loop() {
     flap_pending = false;
 
     /*if (ignore_delay > 0 && ignore) {
-        ESP_LOGI(TAG_FLAP, "m %d, ignoring, cur %d, cmd %d", id, flap, flap_cmd);
+        ESP_LOGI(TAG, "m %d, ignoring, cur %d, cmd %d", id, flap, flap_cmd);
         return;
     }*/
 
@@ -53,7 +57,7 @@ void HallSplitflap::loop() {
             home_pending = false;
 
             #if OPTION_DEBUG_MESSAGES
-                ESP_LOGI(TAG_FLAP, "module %d, zeroing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+                ESP_LOGI(TAG, "module %d, zeroing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
             #endif
 
         } else {
@@ -61,7 +65,7 @@ void HallSplitflap::loop() {
                 flap = (flap + 1) % flap_count;
 
                 #if OPTION_DEBUG_MESSAGES
-                    ESP_LOGI(TAG_FLAP, "module %d, incrementing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+                    ESP_LOGI(TAG, "module %d, incrementing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
                 #endif
             }
         }
@@ -75,7 +79,7 @@ void HallSplitflap::loop() {
                 cycling = false;
 
                 #if OPTION_DEBUG_MESSAGES
-                    ESP_LOGI(TAG_FLAP, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+                    ESP_LOGI(TAG, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
                 #endif
             }
         }
@@ -109,7 +113,7 @@ void HallSplitflap::set_position(uint8_t pos) {
 			last_tick = esp_timer_get_time();
 
             #if OPTION_DEBUG_MESSAGES
-                ESP_LOGI(TAG_FLAP, "module %d, start cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+                ESP_LOGI(TAG, "module %d, start cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
             #endif
 
 			/*if (ignore_delay > 0) {
@@ -163,7 +167,7 @@ void HallSplitflap::overshoot_timer_timeout() {
         cycling = false;
 
         #if OPTION_DEBUG_MESSAGES
-            ESP_LOGI(TAG_FLAP, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+            ESP_LOGI(TAG, "module %d, stop cycling, cur %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
         #endif
     }
     xSemaphoreGive(mutex);

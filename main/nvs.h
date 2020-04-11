@@ -4,7 +4,7 @@
 #include <string>
 #include <nvs.h>
 #include <nvs_flash.h>
-#include "globals.h"
+#include "names.h"
 
 namespace Nvs {
 

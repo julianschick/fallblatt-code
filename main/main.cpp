@@ -2,11 +2,9 @@
 //							Splitflap Control								 //
 /*****************************************************************************/
 
-#include "globals.h"
-
 #include <rom/uart.h>
 #include <driver/gpio.h>
-
+#include "names.h"
 #include "nvs.h"
 #include "splitflap_task.h"
 #include "wifi.h"

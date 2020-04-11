@@ -1,17 +1,6 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-// Basis
-#include <string>
-#include <sstream>
-#include <stdio.h>
-
-// FreeRTOS
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "freertos/semphr.h"
-
 // Target Device
 #define TARGET_DB 0
 #define TARGET_SBAHN 1
@@ -20,10 +9,6 @@
 // Options
 #define OPTION_UART_INPUT 0
 #define OPTION_DEBUG_MESSAGES 0
-
-// Log Tags
-#define TAG_FLAP "flap"
-#define TAG_HTTP "http"
 
 // MDNS Server Properties
 #if DEPLOYMENT_TARGET == TARGET_DB
@@ -52,8 +37,11 @@
     #define DHCP_HOSTNAME "splitflap-berlin"
 #endif
 
-// Syntactic Sugar
-#define PRIVATE_SYMBOLS namespace {
-#define PRIVATE_END }
+// Who am I?
+#if DEPLOYMENT_TARGET == TARGET_DB
+#define WHOAMI "Splitflap-Controller 'delay-db'\n"
+#elif DEPLOYMENT_TARGET == TARGET_SBAHN
+#define WHOAMI "Splitflap-Controller 'splitflap-berlin'\n"
+#endif
 
 #endif //GLOBALS_H_

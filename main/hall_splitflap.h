@@ -1,6 +1,9 @@
 #ifndef HALL_SPLITFLAP_H_
 #define HALL_SPLITFLAP_H_
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/event_groups.h>
+#include <freertos/semphr.h>
 #include "splitflap.h"
 #include "driver/gpio.h"
 

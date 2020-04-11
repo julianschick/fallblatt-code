@@ -1,10 +1,11 @@
 #ifndef COMX_H_
 #define COMX_H_
 
-#include "globals.h"
-
+#include <string>
+#include <sstream>
 #include <vector>
 #include <algorithm>
+#include "names.h"
 
 using namespace std;
 

@@ -1,8 +1,10 @@
 #ifndef SPLITFLAP_H_
 #define SPLITFLAP_H_
 
-#include "globals.h"
 #include <vector>
+#include <stdint.h>
+#include "names.h"
+
 
 class Splitflap {
 

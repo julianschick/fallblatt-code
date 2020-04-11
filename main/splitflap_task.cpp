@@ -1,5 +1,7 @@
 #include "splitflap_task.h"
 
+#define TAG "flap"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 
 #if  DEPLOYMENT_TARGET == TARGET_DB
@@ -15,7 +17,7 @@ TaskHandle_t SplitflapTask::handle;
 #define PORT2 GPIO_NUM_23, GPIO_NUM_22, GPIO_NUM_21
 
 void SplitflapTask::worker(void* arg) {
-	ESP_LOGI(TAG_FLAP, "Splitflap-Task started.");
+	ESP_LOGI(TAG, "Splitflap-Task started.");
 
     #if DEPLOYMENT_TARGET == TARGET_DB
 	    new PollingSplitflap(40, 0, GPIO_NUM_23, GPIO_NUM_19, GPIO_NUM_21, ADC1_CHANNEL_0, 500, 1500);
@@ -36,7 +38,7 @@ void SplitflapTask::worker(void* arg) {
 			uint8_t pos = 		(cmd_value >> 0) & 0x000000FF;
 
             #if OPTION_DEBUG_MESSAGES
-			    ESP_LOGI(TAG_FLAP, "Command: module %d, position %d", module, pos);
+			    ESP_LOGI(TAG, "Command: module %d, position %d", module, pos);
             #endif
 
             Splitflap::module(module)->set_position(pos);

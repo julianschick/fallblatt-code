@@ -4,7 +4,7 @@
 #include <string>
 #include <esp_gap_bt_api.h>
 #include <esp_spp_api.h>
-#include "globals.h"
+#include "names.h"
 
 using namespace std;
 

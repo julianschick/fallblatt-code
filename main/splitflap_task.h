@@ -1,7 +1,9 @@
 #ifndef SPLITFLAP_TASK_H
 #define SPLITFLAP_TASK_H
 
-#include "globals.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "names.h"
 #include "splitflap.h"
 
 class SplitflapTask {

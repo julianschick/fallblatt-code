@@ -1,5 +1,12 @@
 #include "polling_splitflap.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#define TAG "flap"
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
+#include <esp_log.h>
+
 PollingSplitflap::PollingSplitflap(uint8_t flap_count_, uint8_t zero_offset_, gpio_num_t motorPin_, gpio_num_t homePin_, gpio_num_t flapPin_, adc1_channel_t sensorInputChannel_, int falling_threshold_, int rising_threshold_)
 : Splitflap(flap_count_, zero_offset_) {
 
@@ -19,26 +26,26 @@ void PollingSplitflap::loop() {
     read_sensors();
 
     /*if (hsensor_ch_flag == RISING) {
-        ESP_LOGI(TAG_FLAP, "Home sensor level RISING");
+        ESP_LOGI(TAG, "Home sensor level RISING");
     } else if (hsensor_ch_flag == FALLING) {
-        ESP_LOGI(TAG_FLAP, "Home sensor level FALLING");
+        ESP_LOGI(TAG, "Home sensor level FALLING");
     }
 
     if (fsensor_ch_flag == RISING) {
-        ESP_LOGI(TAG_FLAP, "Flap sensor level RISING");
+        ESP_LOGI(TAG, "Flap sensor level RISING");
     } else if (fsensor_ch_flag == FALLING) {
-        ESP_LOGI(TAG_FLAP, "Flap sensor level FALLING");
+        ESP_LOGI(TAG, "Flap sensor level FALLING");
     }*/
 
     if (fsensor_ch_flag == RISING) {
         flap = (flap + 1) % flap_count;
-        //ESP_LOGI(TAG_FLAP, "current_flap = %d", current_flap);
+        //ESP_LOGI(TAG, "current_flap = %d", current_flap);
 
         if (home_pending) {
             /*if (current_flap != 0) {
-                ESP_LOGI(TAG_FLAP, "Home disagree (should be 0 but is %d)", current_flap);
+                ESP_LOGI(TAG, "Home disagree (should be 0 but is %d)", current_flap);
             } else {
-                ESP_LOGI(TAG_FLAP, "Home OK");
+                ESP_LOGI(TAG, "Home OK");
             }*/
             flap = zero_offset;
             flap_known = true;
@@ -48,7 +55,7 @@ void PollingSplitflap::loop() {
         if (flap == flap_cmd && flap_known) {
             gpio_set_level(motorPin, 1);
             cycling = false;
-            //ESP_LOGI(TAG_FLAP, "Motor OFF");
+            //ESP_LOGI(TAG, "Motor OFF");
         }
     }
 
@@ -62,7 +69,7 @@ void PollingSplitflap::loop() {
     if (flap != flap_cmd && !cycling) {
         gpio_set_level(motorPin, 0);
         cycling = true;
-        //ESP_LOGI(TAG_FLAP, "Motor ON");
+        //ESP_LOGI(TAG, "Motor ON");
     }
 }
 

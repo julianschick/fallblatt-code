@@ -21,7 +21,7 @@ string Comx::interpret(std::string line) {
 	std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 
 	if (cmd == "whoareyou") {
-		return "Splitflap Berlin v1.0\n";
+		return WHOAMI;
 	} else if (cmd == "reboot") {
 		//
 		esp_restart();
