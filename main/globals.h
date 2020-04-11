@@ -12,9 +12,6 @@
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
 
-// Logging
-#include "esp_log.h"
-
 // Target Device
 #define TARGET_DB 0
 #define TARGET_SBAHN 1
@@ -26,10 +23,7 @@
 
 // Log Tags
 #define TAG_FLAP "flap"
-#define TAG_WIFI "wlan"
-#define TAG_BT "bluetooth"
 #define TAG_HTTP "http"
-#define TAG_NVS "nvs"
 
 // MDNS Server Properties
 #if DEPLOYMENT_TARGET == TARGET_DB
@@ -39,6 +33,8 @@
     #define MDNS_HOSTNAME "splitflap-berlin"
     #define MDNS_SERVICE_NAME "Splitflap-Berlin/REST"
 #endif
+#define MDNS_INSTANCE_NAME "Splitflap Controller"
+#define MDNS_SERVICE_TYPE "_http"
 
 // Bluetooth Com Properties
 #if DEPLOYMENT_TARGET == TARGET_DB
@@ -47,6 +43,13 @@
 #elif DEPLOYMENT_TARGET == TARGET_SBAHN
     #define SPP_SERVER_NAME "Splitflap-Berlin/Serial"
     #define BT_DEVICE_NAME "Splitflap-Berlin"
+#endif
+
+// DHCP
+#if DEPLOYMENT_TARGET == TARGET_DB
+    #define DHCP_HOSTNAME "delay-db"
+#elif DEPLOYMENT_TARGET == TARGET_SBAHN
+    #define DHCP_HOSTNAME "splitflap-berlin"
 #endif
 
 // Syntactic Sugar

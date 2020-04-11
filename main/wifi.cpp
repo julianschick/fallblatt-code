@@ -1,10 +1,15 @@
 #include "wifi.h"
 
 #include <string.h>
-#include "esp_event_loop.h"
-
-#include "nvs.h"
+#include <esp_event.h>
+#include <esp_log.h>
 #include <mdns.h>
+#include "nvs.h"
+
+#define TAG "wlan"
+#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#include <esp_log.h>
+
 
 const uint32_t Wifi::SBIT_CONNECTED;
 const uint32_t Wifi::SBIT_ACTIVE;
@@ -20,7 +25,7 @@ esp_timer_handle_t Wifi::reconnect_timer;
 void Wifi::setup() {
 
 	wifi_status_bits = xEventGroupCreate();
-	bool active = Nvs::load_bit("wifi_active");
+	bool active = Nvs::getBit("wifi", "active", false);
 
     ip4_addr_set_zero(&wifi_client_ip);
     ip4_addr_set_zero(&zero_ip);
@@ -59,7 +64,8 @@ bool Wifi::enable() {
 
 	if (ret == ESP_OK) {
 		xEventGroupSetBits(wifi_status_bits, SBIT_ACTIVE);
-		Nvs::store_bit("wifi_active", true);
+		Nvs::setBit("wifi", "active", true);
+		Nvs::commit();
 		return true;
 	}
 	return false;
@@ -81,7 +87,8 @@ bool Wifi::disable() {
 		xEventGroupClearBits(wifi_status_bits, SBIT_CONNECTED);
 	}
 
-	Nvs::store_bit("wifi_active", false);
+	Nvs::setBit("wifi", "active", false);
+	Nvs::commit();
 	esp_err_t ret = esp_wifi_stop();
 
 	if (ret == ESP_OK) {
@@ -159,18 +166,20 @@ esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
     switch(event->event_id) {
         
         case SYSTEM_EVENT_STA_START:
-        	ESP_LOGI(TAG_WIFI, "Subsystem started");
-
+        	ESP_LOGI(TAG, "Subsystem started");
             esp_wifi_connect();
             break;
 
         case SYSTEM_EVENT_STA_CONNECTED:
-        	ESP_LOGI(TAG_WIFI, "Connected");
+        	ESP_LOGI(TAG, "Connected");
         	esp_timer_stop(reconnect_timer);
         	number_of_retries = 0;
 
+            tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, DHCP_HOSTNAME);
+            break;
+
         case SYSTEM_EVENT_STA_GOT_IP:
-        	ESP_LOGI(TAG_WIFI, "IP-Address retrieved");
+        	ESP_LOGI(TAG, "IP-Address retrieved");
 
             xSemaphoreTake(ip_semaphore, portMAX_DELAY);
             wifi_client_ip = event->event_info.got_ip.ip_info.ip;
@@ -179,7 +188,7 @@ esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
             break;
 
         case SYSTEM_EVENT_STA_DISCONNECTED:
-        	ESP_LOGI(TAG_WIFI, "Disconnected");
+        	ESP_LOGI(TAG, "Disconnected");
 
             xEventGroupClearBits(wifi_status_bits, SBIT_CONNECTED);
             xSemaphoreTake(ip_semaphore, portMAX_DELAY);
@@ -188,7 +197,7 @@ esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
 
             if ((xEventGroupGetBits(wifi_status_bits) & SBIT_ACTIVE) != 0 &&
             	number_of_retries < max_retries) {
-            	ESP_LOGI(TAG_WIFI, "Try to reconnect (retry %d of %d)...", number_of_retries + 1, max_retries);
+            	ESP_LOGI(TAG, "Try to reconnect (retry %d of %d)...", number_of_retries + 1, max_retries);
             	esp_wifi_connect();
             	number_of_retries++;
 
@@ -208,7 +217,7 @@ esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
 
 void Wifi::reconnect_timer_callback(void* arg) {
 	if ((xEventGroupGetBits(wifi_status_bits) & SBIT_ACTIVE) != 0) {
-		ESP_LOGI(TAG_WIFI, "Periodic try to reconnect...");
+		ESP_LOGI(TAG, "Periodic try to reconnect...");
 		esp_wifi_connect();
 	} else {
 		esp_timer_stop(reconnect_timer);

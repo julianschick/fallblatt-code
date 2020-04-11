@@ -2,6 +2,7 @@
 #define HALL_SPLITFLAP_H_
 
 #include "splitflap.h"
+#include "driver/gpio.h"
 
 class HallSplitflap : public Splitflap {
 

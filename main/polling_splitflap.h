@@ -3,6 +3,7 @@
 
 #include "splitflap.h"
 #include "driver/adc.h"
+#include "driver/gpio.h"
 
 enum Flank {
 	FALLING, NOCHANGE, RISING

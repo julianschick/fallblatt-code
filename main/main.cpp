@@ -4,14 +4,13 @@
 
 #include "globals.h"
 
-#include "nvs.h"
-#include "nvs_flash.h"
-#include "rom/uart.h"
+#include <rom/uart.h>
+#include <driver/gpio.h>
 
+#include "nvs.h"
 #include "splitflap_task.h"
 #include "wifi.h"
 #include "blue.h"
-#include "comx.h"
 #include "http_server.h"
 #include "mdns.h"
 
@@ -25,7 +24,9 @@ extern "C" {
 
 		SplitflapTask::setup();
 
-		start_mdns_service();
+		ESP_ERROR_CHECK(esp_event_loop_create_default()); // needed for mdns
+        start_mdns_service();
+
 		Wifi::setup();
 		Blue::setup();
 		HttpServer::start();

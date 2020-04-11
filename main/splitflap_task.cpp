@@ -1,5 +1,7 @@
 #include "splitflap_task.h"
 
+#include <esp_log.h>
+
 #if  DEPLOYMENT_TARGET == TARGET_DB
     #include "polling_splitflap.h"
 #elif DEPLOYMENT_TARGET == TARGET_SBAHN
@@ -19,7 +21,7 @@ void SplitflapTask::worker(void* arg) {
 	    new PollingSplitflap(40, 0, GPIO_NUM_23, GPIO_NUM_19, GPIO_NUM_21, ADC1_CHANNEL_0, 500, 1500);
     #elif DEPLOYMENT_TARGET == TARGET_SBAHN
         //Linie
-        new HallSplitflap(64, 62, PORT3, 38000, 5000);
+        new HallSplitflap(64, 62, PORT3, 38000, 5500);
         //Endbahnhof
         new HallSplitflap(80, 70, PORT4, 30000, 15000);
         //Zuglauf

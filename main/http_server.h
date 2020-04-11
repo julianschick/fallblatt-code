@@ -26,6 +26,12 @@ namespace HttpServer {
             .handler   = whoareyou_handler,
             .user_ctx  = NULL
         };
+        httpd_uri_t root = {
+                .uri       = "/?",
+                .method    = HTTP_GET,
+                .handler   = whoareyou_handler,
+                .user_ctx  = NULL
+        };
 
         esp_err_t position_get_handler(httpd_req_t *req);
         httpd_uri_t position_get = {
