@@ -21,6 +21,8 @@ private:
     static void security_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param);
     static void parse_buffer();
 
+    static char* bda2str(uint8_t * bda, char *str, size_t size);
+
 };
 
 #endif //BLUETOOTH_H_INCLUDED

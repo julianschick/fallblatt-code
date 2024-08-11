@@ -110,8 +110,8 @@ void PollingSplitflap::setup_gpio() {
     gpio_set_level(homePin, 0);
     gpio_set_level(flapPin, 0);
 
-   	adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_config_channel_atten(sensorInputChannel, ADC_ATTEN_DB_11);
+	adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(sensorInputChannel, ADC_ATTEN_DB_12);
 }
 
 void PollingSplitflap::read_sensors_raw_values() {

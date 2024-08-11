@@ -1,5 +1,6 @@
 #include "comx.h"
 
+#include <esp_netif_ip_addr.h>
 #include "splitflap_task.h"
 #include "wifi.h"
 

@@ -6,6 +6,7 @@
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 #include <esp_wifi.h>
+#include <esp_timer.h>
 
 using namespace std;
 
@@ -33,15 +34,15 @@ private:
 	static int number_of_retries;
 	//
 	static SemaphoreHandle_t ip_semaphore;
-	static ip4_addr_t wifi_client_ip;
-	static ip4_addr_t zero_ip;
+	static esp_ip4_addr_t wifi_client_ip;
+	static esp_ip4_addr_t zero_ip;
 	//
 	static wifi_config_t config;
 	static esp_timer_handle_t reconnect_timer;
 
 	static void load_config();
 	static bool commit_config();
-	static esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
+	static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 	static void reconnect_timer_callback(void* arg);
 };
 

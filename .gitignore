@@ -1,5 +1,4 @@
 build/
-sdkconfig
-sdkconfig.old
 .idea/
 cmake-build-*
+managed_components/

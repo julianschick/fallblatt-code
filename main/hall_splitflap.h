@@ -6,6 +6,7 @@
 #include <freertos/semphr.h>
 #include "splitflap.h"
 #include "driver/gpio.h"
+#include <esp_timer.h>
 
 class HallSplitflap : public Splitflap {
 

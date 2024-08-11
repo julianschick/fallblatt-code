@@ -2,7 +2,10 @@
 //							Splitflap Control								 //
 /*****************************************************************************/
 
-#include <rom/uart.h>
+#if OPTION_UART_INPUT
+	#include <rom/uart.h>
+#endif
+
 #include <driver/gpio.h>
 #include "names.h"
 #include "nvs.h"
@@ -22,12 +25,13 @@ extern "C" {
 
 		SplitflapTask::setup();
 
-		ESP_ERROR_CHECK(esp_event_loop_create_default()); // needed for mdns
-        start_mdns_service();
+		ESP_ERROR_CHECK(esp_event_loop_create_default()); // needed for mdns and wifi
 
-		Wifi::setup();
+        Wifi::setup();
 		Blue::setup();
 		HttpServer::start();
+
+		start_mdns_service();
 
         #if OPTION_UART_INPUT
 		std::string buffer;

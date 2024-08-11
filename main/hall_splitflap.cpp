@@ -52,14 +52,15 @@ void HallSplitflap::loop() {
     xSemaphoreTake(mutex, 0);
     {
         if (home_pending) {
-            flap = zero_offset;
-            flap_known = true;
-            home_pending = false;
+        	if (cycling) {
+            	flap = zero_offset;
+            	flap_known = true;
+            	home_pending = false;
 
-            #if OPTION_DEBUG_MESSAGES
-                ESP_LOGI(TAG, "module %d, zeroing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
-            #endif
-
+            	#if OPTION_DEBUG_MESSAGES
+                	ESP_LOGI(TAG, "module %d, zeroing, new %d, cmd %d, tix %lld", id, flap, flap_cmd, esp_timer_get_time());
+            	#endif
+            }
         } else {
             if (cycling) {
                 flap = (flap + 1) % flap_count;

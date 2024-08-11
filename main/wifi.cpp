@@ -4,10 +4,11 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <mdns.h>
+#include <esp_netif_ip_addr.h>
 #include "nvs.h"
 
 #define TAG "wlan"
-#define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
+#define LOG_LOCAL_LEVEL ESP_LOG_INFO
 #include <esp_log.h>
 
 
@@ -15,10 +16,11 @@ const uint32_t Wifi::SBIT_CONNECTED;
 const uint32_t Wifi::SBIT_ACTIVE;
 const int Wifi::max_retries;
 int Wifi::number_of_retries = 0;
+esp_netif_t* sta_netif = NULL;
 EventGroupHandle_t Wifi::wifi_status_bits;
 SemaphoreHandle_t Wifi::ip_semaphore;
-ip4_addr_t Wifi::wifi_client_ip;
-ip4_addr_t Wifi::zero_ip;
+esp_ip4_addr_t Wifi::wifi_client_ip;
+esp_ip4_addr_t Wifi::zero_ip;
 wifi_config_t Wifi::config;
 esp_timer_handle_t Wifi::reconnect_timer;
 
@@ -27,14 +29,28 @@ void Wifi::setup() {
 	wifi_status_bits = xEventGroupCreate();
 	bool active = Nvs::getBit("wifi", "active", false);
 
-    ip4_addr_set_zero(&wifi_client_ip);
-    ip4_addr_set_zero(&zero_ip);
+    esp_netif_set_ip4_addr(&wifi_client_ip, 0, 0, 0, 0);
+    esp_netif_set_ip4_addr(&zero_ip, 0, 0, 0, 0);
 
 	ip_semaphore = xSemaphoreCreateBinary();
 	xSemaphoreGive(ip_semaphore);
 
-	tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, NULL));
+	ESP_ERROR_CHECK(esp_netif_init());
+	sta_netif = esp_netif_create_default_wifi_sta();
+
+    esp_event_handler_instance_t instance_any_id;
+    esp_event_handler_instance_t instance_got_ip;
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &wifi_event_handler,
+                                                        NULL,
+                                                        &instance_any_id));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        IP_EVENT_STA_GOT_IP,
+                                                        &wifi_event_handler,
+                                                        NULL,
+                                                        &instance_got_ip));
+    
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -114,13 +130,9 @@ string Wifi::get_ip() {
 	string result;
 	xSemaphoreTake(ip_semaphore, portMAX_DELAY);
 	{
-	    if (ip4_addr_cmp(&wifi_client_ip, &zero_ip)) {
-    	    result = "0.0.0.0";
-	    } else {
-	    	char response[64];
-    	    sprintf(response, "%d.%d.%d.%d", IP2STR(&wifi_client_ip));
-    	    result = response;
-    	}
+		char response[64];
+		esp_ip4addr_ntoa(&wifi_client_ip, response, 64);
+	    result = response;
     }
     xSemaphoreGive(ip_semaphore);
 
@@ -154,65 +166,66 @@ bool Wifi::set_pass(string pass) {
 }
 
 void Wifi::load_config() {
-	esp_wifi_get_config(ESP_IF_WIFI_STA, &config);
+	esp_wifi_get_config(WIFI_IF_STA, &config);
 }
 
 bool Wifi::commit_config() {
-	return esp_wifi_set_config(ESP_IF_WIFI_STA, &config) == ESP_OK;
+	return esp_wifi_set_config(WIFI_IF_STA, &config) == ESP_OK;
 }
 
-esp_err_t Wifi::wifi_event_handler(void *ctx, system_event_t *event) {
-    
-    switch(event->event_id) {
+void Wifi::wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
+
+	if (event_base == WIFI_EVENT) {
+
+		switch(event_id) {
         
-        case SYSTEM_EVENT_STA_START:
-        	ESP_LOGI(TAG, "Subsystem started");
-            esp_wifi_connect();
-            break;
+	        case WIFI_EVENT_STA_START:
+	        	ESP_LOGI(TAG, "Subsystem started");
+	            esp_wifi_connect();
+	            break;
 
-        case SYSTEM_EVENT_STA_CONNECTED:
-        	ESP_LOGI(TAG, "Connected");
-        	esp_timer_stop(reconnect_timer);
-        	number_of_retries = 0;
+	        case WIFI_EVENT_STA_CONNECTED:
+	        	ESP_LOGI(TAG, "Connected");
+	        	esp_timer_stop(reconnect_timer);
+	        	number_of_retries = 0;
 
-            tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, DHCP_HOSTNAME);
-            break;
+	            esp_netif_set_hostname(sta_netif, DHCP_HOSTNAME);
+	            break;
 
-        case SYSTEM_EVENT_STA_GOT_IP:
-        	ESP_LOGI(TAG, "IP-Address retrieved");
+	        case WIFI_EVENT_STA_DISCONNECTED:
+	        	ESP_LOGI(TAG, "Disconnected");
 
-            xSemaphoreTake(ip_semaphore, portMAX_DELAY);
-            wifi_client_ip = event->event_info.got_ip.ip_info.ip;
-            xSemaphoreGive(ip_semaphore);
-            xEventGroupSetBits(wifi_status_bits, SBIT_CONNECTED);
-            break;
+	            xEventGroupClearBits(wifi_status_bits, SBIT_CONNECTED);
+	            xSemaphoreTake(ip_semaphore, portMAX_DELAY);
+	            esp_netif_set_ip4_addr(&wifi_client_ip, 0, 0, 0, 0);
+	            xSemaphoreGive(ip_semaphore);
 
-        case SYSTEM_EVENT_STA_DISCONNECTED:
-        	ESP_LOGI(TAG, "Disconnected");
+	            if ((xEventGroupGetBits(wifi_status_bits) & SBIT_ACTIVE) != 0 &&
+	            	number_of_retries < max_retries) {
+	            	ESP_LOGI(TAG, "Try to reconnect (retry %d of %d)...", number_of_retries + 1, max_retries);
+	            	esp_wifi_connect();
+	            	number_of_retries++;
 
-            xEventGroupClearBits(wifi_status_bits, SBIT_CONNECTED);
-            xSemaphoreTake(ip_semaphore, portMAX_DELAY);
-            ip4_addr_set_zero(&wifi_client_ip);
-            xSemaphoreGive(ip_semaphore);
+	            	if (number_of_retries == max_retries) {
+	            		ESP_ERROR_CHECK(esp_timer_start_periodic(reconnect_timer, 60000000));
+	            	}
+	        	}
+	            break;
 
-            if ((xEventGroupGetBits(wifi_status_bits) & SBIT_ACTIVE) != 0 &&
-            	number_of_retries < max_retries) {
-            	ESP_LOGI(TAG, "Try to reconnect (retry %d of %d)...", number_of_retries + 1, max_retries);
-            	esp_wifi_connect();
-            	number_of_retries++;
+	        default:
+	            break;
+        }
+ 
+	} else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
 
-            	if (number_of_retries == max_retries) {
-            		ESP_ERROR_CHECK(esp_timer_start_periodic(reconnect_timer, 60000000));
-            	}
-        	}
-            break;
+		ESP_LOGI(TAG, "IP-Address retrieved");
+		ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 
-        default:
-            break;
-    }
-
-	mdns_handle_system_event(ctx, event);
-    return ESP_OK;
+        xSemaphoreTake(ip_semaphore, portMAX_DELAY);
+        wifi_client_ip = *(&event->ip_info.ip);
+        xSemaphoreGive(ip_semaphore);
+        xEventGroupSetBits(wifi_status_bits, SBIT_CONNECTED);
+	}
 }
 
 void Wifi::reconnect_timer_callback(void* arg) {
