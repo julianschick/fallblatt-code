@@ -5,7 +5,8 @@
 #include <esp_log.h>
 #include <mdns.h>
 #include <esp_netif_ip_addr.h>
-#include "nvs.h"
+#include "names.h"
+#include "nvs_.h"
 
 #define TAG "wlan"
 #define LOG_LOCAL_LEVEL ESP_LOG_INFO

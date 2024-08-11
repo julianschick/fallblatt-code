@@ -8,12 +8,12 @@
 
 #include <driver/gpio.h>
 #include "names.h"
-#include "nvs.h"
+#include "nvs_.h"
 #include "splitflap_task.h"
 #include "wifi.h"
 #include "blue.h"
 #include "http_server.h"
-#include "mdns.h"
+#include "mdns_.h"
 
 extern "C" {
 
