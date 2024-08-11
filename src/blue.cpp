@@ -114,13 +114,13 @@ void Blue::callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             ESP_LOGI(TAG, "ESP_SPP_OPEN_EVT");
             break;
         case ESP_SPP_CLOSE_EVT:
-            ESP_LOGI(TAG, "ESP_SPP_CLOSE_EVT status:%d handle:%"PRIu32" close_by_remote:%d", param->close.status,
+            ESP_LOGI(TAG, "ESP_SPP_CLOSE_EVT status:%d handle:%" PRIu32 " close_by_remote:%d", param->close.status,
                      param->close.handle, param->close.async);
             client = 0;
             break;
         case ESP_SPP_START_EVT:
             if (param->start.status == ESP_SPP_SUCCESS) {
-                ESP_LOGI(TAG, "ESP_SPP_START_EVT handle:%"PRIu32" sec_id:%d scn:%d", param->start.handle, param->start.sec_id,
+                ESP_LOGI(TAG, "ESP_SPP_START_EVT handle:%" PRIu32 " sec_id:%d scn:%d", param->start.handle, param->start.sec_id,
                          param->start.scn);
                 esp_bt_dev_set_device_name(BT_DEVICE_NAME);
                 esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
@@ -133,7 +133,7 @@ void Blue::callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             break;
         case ESP_SPP_DATA_IND_EVT:
     
-            ESP_LOGI(TAG, "ESP_SPP_DATA_IND_EVT len:%d handle:%"PRIu32,
+            ESP_LOGI(TAG, "ESP_SPP_DATA_IND_EVT len:%d handle:%" PRIu32,
                      param->data_ind.len, param->data_ind.handle);
             if (param->data_ind.len < 128) {
                 esp_log_buffer_hex("", param->data_ind.data, param->data_ind.len);
@@ -157,7 +157,7 @@ void Blue::callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
             ESP_LOGI(TAG, "ESP_SPP_WRITE_EVT");
             break;
         case ESP_SPP_SRV_OPEN_EVT:
-            ESP_LOGI(TAG, "ESP_SPP_SRV_OPEN_EVT status:%d handle:%"PRIu32", rem_bda:[%s]", param->srv_open.status,
+            ESP_LOGI(TAG, "ESP_SPP_SRV_OPEN_EVT status:%d handle:%" PRIu32 ", rem_bda:[%s]", param->srv_open.status,
                      param->srv_open.handle, bda2str(param->srv_open.rem_bda, bda_str, sizeof(bda_str)));
             client = param->open.handle;
             break;
