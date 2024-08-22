@@ -25,7 +25,7 @@ void SplitflapTask::worker(void* arg) {
         //Linie
         new HallSplitflap(64, 62, PORT3, 38000, 4500);
         //Endbahnhof
-        new HallSplitflap(80, 69, PORT4, 30000, 4400);
+        new HallSplitflap(80, 69, PORT4, 30000, 4000);
         //Zuglauf
         new HallSplitflap(80, 11, PORT2, 40000, 5000);
     #endif
