@@ -30,13 +30,6 @@ private:
 	int falling_threshold;
 	int rising_threshold;
 
-    /*uint8_t flap = 0;
-    uint8_t flap_cmd = 0;
-    bool flap_known = false;
-    bool cmd_void = true;
-    bool cycling = false;
-    bool home_pending = false;*/
-
 	uint8_t flap = 0;
     uint8_t flap_cmd = 0;
     bool flap_known = false;

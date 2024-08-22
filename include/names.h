@@ -8,7 +8,6 @@
 
 // Options
 #define OPTION_UART_INPUT 0
-#define OPTION_DEBUG_MESSAGES 0
 
 // MDNS Server Properties
 #if DEPLOYMENT_TARGET == TARGET_DB

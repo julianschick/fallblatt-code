@@ -23,9 +23,9 @@ void SplitflapTask::worker(void* arg) {
 	    new PollingSplitflap(40, 0, GPIO_NUM_23, GPIO_NUM_19, GPIO_NUM_21, ADC1_CHANNEL_0, 500, 1500);
     #elif DEPLOYMENT_TARGET == TARGET_SBAHN
         //Linie
-        new HallSplitflap(64, 62, PORT3, 38000, 5500);
+        new HallSplitflap(64, 62, PORT3, 38000, 4500);
         //Endbahnhof
-        new HallSplitflap(80, 70, PORT4, 30000, 15000);
+        new HallSplitflap(80, 69, PORT4, 30000, 4400);
         //Zuglauf
         new HallSplitflap(80, 11, PORT2, 40000, 5000);
     #endif
@@ -37,9 +37,7 @@ void SplitflapTask::worker(void* arg) {
 			uint8_t module = 	(cmd_value >> 8) & 0x000000FF;
 			uint8_t pos = 		(cmd_value >> 0) & 0x000000FF;
 
-            #if OPTION_DEBUG_MESSAGES
-			    ESP_LOGI(TAG, "Command: module %d, position %d", module, pos);
-            #endif
+			ESP_LOGD(TAG, "Command: module %d, position %d", module, pos);
 
             Splitflap::module(module)->set_position(pos);
 		} else {

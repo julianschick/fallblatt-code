@@ -46,8 +46,8 @@ private:
     bool flap_known = false;
     bool cmd_void = true;
     bool cycling = false;
-    bool home_pending = false;
-    bool flap_pending = false;
+	bool home_pending = false;
+	bool flap_pending = false;
 
     int64_t last_tick;
 
@@ -57,6 +57,8 @@ private:
 
 	// concurrency management
 	EventGroupHandle_t status_bits;
+	uint32_t SBIT_FLAP_PENDING =	0x00000001;
+	uint32_t SBIT_HOME_PENDING =	0x00000002;
     uint32_t SBIT_IGNORE = 			0x00000004;
 	SemaphoreHandle_t mutex;
 
