@@ -23,7 +23,7 @@ void SplitflapTask::worker(void* arg) {
 	    new PollingSplitflap(40, 0, GPIO_NUM_23, GPIO_NUM_19, GPIO_NUM_21, ADC1_CHANNEL_0, 500, 1500);
     #elif DEPLOYMENT_TARGET == TARGET_SBAHN
         //Linie
-        new HallSplitflap(64, 62, PORT3, 38000, 4500);
+        new HallSplitflap(64, 63, PORT3, 38000, 14000);
         //Endbahnhof
         new HallSplitflap(80, 69, PORT4, 30000, 4000);
         //Zuglauf
